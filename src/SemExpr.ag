@@ -1,0 +1,193 @@
+imports
+{
+import State
+import Data.Maybe
+import UU.Util.Utils
+}
+
+INCLUDE "Expr.ag"
+
+ATTR Expr [gamma : ValGam stack : ValStk || fo : FIOut ]
+
+ATTR RootAbs [ || fo : FIOut ]
+SEM Expr
+        | Push
+                loc.fe                          = @lhs.stack
+                loc.num                         = read @n
+                loc.st                          = addStk (ConsInt @num) @fe
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = []
+                                                       }
+
+        | Tt
+                loc.fe                          = @lhs.stack
+                loc.b                           = True
+                loc.st                          = addStk (ConsBool @b) @fe
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = []
+                                                       }
+
+        | Ff
+                loc.fe                          = @lhs.stack
+                loc.b                           = False
+                loc.st                          = addStk (ConsBool @b) @fe
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = []
+                                                       }
+
+        | Secu
+                loc.fe1                         = foe       @s1.fo
+                loc.er1                         = foErrL    @s1.fo
+                s2.stack                        = @fe1
+                s2.gamma                        = fos       @s1.fo
+                loc.fe2                         = foe       @s2.fo
+                loc.fs2                         = fos       @s2.fo
+                loc.er2                         = foErrL    @s2.fo
+                lhs.fo                          = FIOut{
+                                                        foe         = @fe2
+                                                        , fos       = @fs2
+                                                        , foErrL    = @er1 ++ @er2
+                                                       }
+
+        | Add
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.y, loc.ys)                 = bckStk @xs
+                (loc.va, loc.err)               = case (@x, @y) of
+                                                        (ConsInt x , ConsInt y) -> ((x+y), [])
+                                                        (_ , _)  -> (0, "Error, valor no valido en la pila para la suma")
+                loc.st                          = addStk (ConsInt @va) @ys
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = addVar "x" @va emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+
+        | Mul
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.y, loc.ys)                 = bckStk @xs
+                (loc.va, loc.err)               = case (@x, @y) of
+                                                        (ConsInt x , ConsInt y) -> ((x*y), [])
+                                                        (_ , _)  -> (0, "Error, valor no valido en la pila para la suma")
+                loc.st                          = addStk (ConsInt @va) @ys
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = addVar "x" @va emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+
+        | Sub
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.y, loc.ys)                 = bckStk @xs
+                (loc.va, loc.err)               = case (@x, @y) of
+                                                        (ConsInt x , ConsInt y) -> ((x-y), [])
+                                                        (_ , _)  -> (0, "Error, valor no valido en la pila para la suma")
+                loc.st                          = addStk (ConsInt @va) @ys
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = addVar "x" @va emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+
+        | Eq
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.y, loc.ys)                 = bckStk @xs
+                (loc.b, loc.err)                = case (@x, @y) of
+                                                        (ConsInt x , ConsInt y) -> ((x==y), [])
+                                                        (_ , _)  -> (False, "Error, valor no valido en la pila para la suma")
+                loc.st                          = addStk (ConsBool @b) @ys
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+
+        | Le
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.y, loc.ys)                 = bckStk @xs
+                (loc.b, loc.err)                = case (@x, @y) of
+                                                        (ConsInt x , ConsInt y) -> ((x<=y), [])
+                                                        (_ , _)  -> (False, "Error, valor no valido en la pila para la suma")
+                loc.st                          = addStk (ConsBool @b) @ys
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+
+        | And
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.y, loc.ys)                 = bckStk @xs
+                (loc.b, loc.err)                = case (@x, @y) of
+                                                        (ConsBool x , ConsBool y) -> ((x&&y), ("AND" ++ show (x&&y)))
+                                                        (_ , _)  -> (False, "Error, valor no valido en la pila para la suma")
+                loc.st                          = addStk (ConsBool @b) @ys
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+
+        | Neg
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.b, loc.err)                = case @x of
+                                                        (ConsBool x) -> (not x, [])
+                                                        _            -> (False, "Error, valor no valido en la pila para la suma")
+                loc.st                          = addStk (ConsBool @b) @xs
+                lhs.fo                          = FIOut{
+                                                        foe         = @st
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+        | Fetc
+                loc.v                           = valGamLookupVar1 @s @lhs.gamma
+                (loc.n, loc.err)                = case @v of
+                                                          Nothing      -> (0, ("Error " ++ @s ++ " no esta"))
+                                                          Just (d , s) -> (d, [])
+                lhs.fo                          = FIOut{
+                                                        foe         = addStk (ConsInt @n) @lhs.stack
+                                                        , fos       = @lhs.gamma
+                                                        , foErrL    = @err
+                                                       }
+        | Stor
+                loc.var                         = @s
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.va, loc.err)               = case @x of
+                                                        ConsInt x -> (x, [])
+                                                        _         -> (0, "Error, valor no valido en la pila para la suma")
+                lhs.fo                          = FIOut{
+                                                        foe         = @xs
+                                                        , fos       = chngVar @var @va emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+
+        | Noop
+                lhs.fo                          = FIOut{
+                                                        foe         = emptyStk
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = []
+                                                       }
+
+
+        | Bran
+                (loc.x, loc.xs)                 = bckStk @lhs.stack
+                (loc.b, loc.err)                = case @x of
+                                                        (ConsBool x) -> (x, ("br" ++ show (x)))
+                                                        _            -> (False, "Error, valor no valido en la pila para la suma")
+                loc.fos                         = case @b of
+                                                        True        -> @s1.fo
+                                                        False       -> @s2.fo
+                lhs.fo                          = FIOut{
+                                                        foe         = foe @fos
+                                                        , fos       = emptyGamma
+                                                        , foErrL    = @err
+                                                       }
+
+SEM RootAbs
+        | RootAbs exp.gamma                     = emptyGamma
+                  exp.stack                     = emptyStk

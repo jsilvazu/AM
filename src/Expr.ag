@@ -1,0 +1,28 @@
+imports
+{
+}
+
+DATA Expr
+    | Push      n  : {String}
+    | Secu      s1 : Expr
+                s2 : Expr
+    | Add
+    | Mul
+    | Sub
+    | Tt
+    | Ff
+    | Eq
+    | Le
+    | And
+    | Neg
+    | Fetc      s  : {String}
+    | Stor      s  : {String}
+    | Noop
+    | Bran      s1 : Expr
+                s2 : Expr
+
+---------------------------------------
+
+DATA RootAbs | RootAbs exp : Expr
+
+DERIVING Expr Arit Boole: Show
