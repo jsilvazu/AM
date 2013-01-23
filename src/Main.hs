@@ -94,7 +94,7 @@ main = do
 --            s = ": : : TRUE BRANCH( TRUE ; FALSE) TRUE AND"
 --            s = ": : : : : : : : : PUSH 1 PUSH 3 PUSH 3 ADD MULT PUSH 5 EQ TRUE AND NEG"
 --            s = "; ; PUSH 1 PUSH 2 MULT"
-          t pRoot (lmbdScanTxt s )
+--          t pRoot (lmbdScanTxt s )
           a <- parseIO pExpr (lmbdScanTxt s)
           print a
 
